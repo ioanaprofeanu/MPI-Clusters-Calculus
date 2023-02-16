@@ -1,0 +1,70 @@
+## Profeanu Ioana, 333CA
+# Tema3 APD - README file
+-------------------------------------------------------------------------------
+* Program Description
+  * Implemented a distributed program using MPI, in which the processes are
+  grouped in a 4 clusters topology, each one having a coordinator who knows
+  what processes are its workers. The scope is for each process to know the
+  topology and to complete the calculus of an array using distributed
+  operations.
+-------------------------------------------------------------------------------
+* Observations
+  * All the tasks (Task 1, 2, 3 and 4) have been solved using the same
+  solution, the only difference being that certain aspects in regard to the
+  process with rank 1 may differ, depending on the disconnection error;
+-------------------------------------------------------------------------------
+* Topology (Task1; same approach for Task3 & Task4)
+  * firstly, each coordinator reads the rank of its workers from the input file
+  and adds them to a vector of subordinate workers;
+  * we make a convention in regard to the chain of leader workers: each leader
+  has a parent and a child (equal to -1 if nonexistent) and the chain starts
+  from the rank 0; we also keep the order of the coordinators in an array
+  (0->3->2->1 for communication error = 0 or 1, 0->3->2 for communication error
+  = 2, in order to exclude the leader with rank 1);
+  * we get the leader of the worker processes using a function in which the
+  coordinators send their rank to all their workers, and the workers receive
+  the leader rank from any source (since they don't know who it is from, they
+  only know they should receive a message);
+  * after that, in order to find the final topology, each leader completes its
+  own topology matrix using the links to their workers; after that, the
+  topology is sent to the coordinator's parent (according to the previous
+  convention) and receives the topology from its child and completes its
+  own topology with the received data; in the end, the coordinator with the
+  rank 0 will have the completed topology; each coordinator (different that 0)
+  will receive the final topology from the parent and will send it further to
+  its child and to its workers;
+  * each worker receives the final topology from its leader;
+  * finally, each process will print the topology and will also calculate the
+  total number of workers within the topology (needed for Task2);
+-------------------------------------------------------------------------------
+* Distributed Calculus (Task2; same approach for Task3 & Task4)
+  * note: only the coordinators within the order of coordinators vector will be
+  included in the solving of this task (so the leader with rank 1 and its
+  workers will be excluded if the communication error is 2 - for Task 4);
+  * firstly, the leader with rank 0 will generate the calculus array;
+  * to make the calculus, each coordinator will send the array length and array
+  to its child (the messages will spread starting with rank 0, who is the array
+  generator); each coordinator child will receive the data from the parent;
+  * the coordinators calculate how many workers are within the clusters prior
+  to it using the topology and the coordinators order; then, the equal number
+  of elements each worker should calculate is computed, as well as the remain-
+  der value (= array length / (% for remainder) total workers);
+  * for each subordinate worker, the leader calculates the start and the end of
+  the chunk within the array that it should calculate; each worker within the
+  topology will parse the exact amount of elements, except for the first
+  remainder-th workers, who will each parse 1 more element (so that the remain-
+  der is distributed equally);
+  * after that, the array data and the start and end of the array which should
+  be parsed is sent to the worker;
+  * the leader receives the parsed array from each of its workers and completes
+  its own array with the data the workers calculated (the leader changes the
+  data correspondent to the start and the end of the zone each worker parsed);
+  * each coordinator receives the array of its coordinator child and completes
+  its own array, starting from the position of the last element its workers
+  calculated; then, this array is send futher to the parent;
+  * meanwhile, the workers receive the data about the array and the range they
+  should calculate within and then they calculate the assigned elements; after
+  that, the array is sent back to the leader;
+  * after this process, the coordinator with rank 0 will have the completely
+  calculated result array, which it prints;
+-------------------------------------------------------------------------------
